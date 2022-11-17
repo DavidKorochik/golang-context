@@ -6,31 +6,48 @@ import (
 	"time"
 )
 
-func executeContextLoop(ctx context.Context) {
-	reqId := ctx.Value("request-id").(string)
-	fmt.Println(reqId)
+func addNumbersToChannel(ctx context.Context, numsCh chan int) {
+	go doSomethingWithTheCtx(ctx, numsCh)
 
+	for num := 1; num <= 6; num++ {
+		numsCh <- num
+	}
+
+}
+
+func doSomethingWithTheCtx(ctx context.Context, numsCh <-chan int) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("Done with the function")
-		default:
-			fmt.Println("Doing something with the function")
+			fmt.Println("Context has finished executing within the time passed")
+			return
+		case printNum := <-numsCh:
+			fmt.Println(printNum)
 		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
+
 }
 
-func enrichContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, "request-id", "12345")
+func addKeysValuesToCtx(ctx context.Context) context.Context {
+	return context.WithValue(ctx, "user_id", "id12345")
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	ctx = enrichContext(ctx)
-	go executeContextLoop(ctx)
+	numsCh := make(chan int)
 
-	if ctx.Err() != nil {
-		fmt.Println("Finished executing, exceeded")
-	}
+	// We set a context with a total of 2 seconds of execution time
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	// We cancel the execution of the context in the end of the main function
+	defer cancel()
+
+	// Here we have a contet with the user_id key and its associated value
+	ctx = addKeysValuesToCtx(ctx)
+
+	// Here we add numbers to the channel
+	addNumbersToChannel(ctx, numsCh)
+
+	time.Sleep(2 * time.Second)
 }
