@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 )
 
@@ -27,7 +28,6 @@ func doSomethingWithTheCtx(ctx context.Context, numsCh <-chan int) {
 
 		time.Sleep(500 * time.Millisecond)
 	}
-
 }
 
 func addKeysValuesToCtx(ctx context.Context) context.Context {
@@ -43,11 +43,14 @@ func main() {
 	// We cancel the execution of the context in the end of the main function
 	defer cancel()
 
-	// Here we have a contet with the user_id key and its associated value
+	// Add to the parent context the user_id key and its associated value
 	ctx = addKeysValuesToCtx(ctx)
 
-	// Here we add numbers to the channel
+	// Add numbers to the channel
 	addNumbersToChannel(ctx, numsCh)
+
+	// Get the number of go routines just for logging purposes
+	fmt.Println(runtime.NumGoroutine())
 
 	time.Sleep(2 * time.Second)
 }
